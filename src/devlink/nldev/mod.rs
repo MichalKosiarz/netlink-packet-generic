@@ -9,8 +9,10 @@ use netlink_packet_utils::{
     traits::*,
     DecodeError,
 };
-use std::mem::size_of_val;
+use std::any::{Any, TypeId};
+//use enum_as_inner::EnumAsInner;
 
+//EnumAsInner
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum GenlDevlinkAttrs {
     BusName(String),
@@ -87,7 +89,7 @@ pub enum GenlDevlinkAttrs {
     ResourceUnit(u8),
     ResourceOcc(u64),
     DpipeTableResourceId(u64),
-    DpipeTableResourceUnit(u64),    
+    DpipeTableResourceUnit(u64),
     PortFlavour(u16),
     PortNumber(u32),
     Param(Vec<GenlDevlinkAttrs>),
@@ -180,357 +182,161 @@ pub enum GenlDevlinkAttrs {
     RateTxMax(u64),
     RateNodeName(String),
     RateParentNodeName(String),
-    RegionMaxSnapshots(u32), 
+    RegionMaxSnapshots(u32),
+}
+
+trait TypeInfo {
+    fn buf_len(&self) -> usize;
+}
+
+impl TypeInfo for Vec<GenlDevlinkAttrs> {
+    fn buf_len(&self) -> usize {
+        self.iter().map(|nla| nla.buffer_len()).sum()
+    }
+}
+impl TypeInfo for Vec<u8> {
+    fn buf_len(&self) -> usize {
+        self.len()
+    }
+}
+impl TypeInfo for String {
+    fn buf_len(&self) -> usize {
+        self.len() + 1
+    }
 }
 
 impl Nla for GenlDevlinkAttrs {
     fn value_len(&self) -> usize {
         use GenlDevlinkAttrs::*;
+
+        if self.type_id() == TypeId::of::<u8>() {
+            return 1;
+        } else if self.type_id() == TypeId::of::<u16>() {
+            return 2;
+        } else if self.type_id() == TypeId::of::<u32>() {
+            return 4;
+        } else if self.type_id() == TypeId::of::<u64>() {
+            return 8;
+        } else if self.type_id() == TypeId::of::<bool>() {
+            return 1;
+        }
+        
         match self {
-            BusName(s) => s.len() + 1,
-            Location(s) => s.len() + 1,
-            PortIndex(v) => size_of_val(v),
-            PortType(v) => size_of_val(v),
-            DesiredType(v) => size_of_val(v),
-            NetdevIndex(v) => size_of_val(v),
-            NetdevName(s) => s.len() + 1,
-            PortFlavour(v) => size_of_val(v),
-            PortNumber(v) => size_of_val(v),
-            Param(v) => v.iter().map(|nla| nla.buffer_len()).sum(),
-            ParamName(s) => s.len() + 1,
-            ParamGeneric(v) => size_of_val(v),
-            ParamType(v) => size_of_val(v),
-            ParamValueList(v) => v.iter().map(|nla| nla.buffer_len()).sum(),
-            ParamValue(v) => size_of_val(v),
-            ParamValueData(v) => v.iter().map(|nla| nla.buffer_len()).sum(),
-            ParamValueCmode(v) => size_of_val(v),
-            RegionName(s) => s.len() + 1,
-            RegionSize(v) => size_of_val(v),
-            RegionSnapshots(v) => v.iter().map(|nla| nla.buffer_len()).sum(),
-            RegionSnapshot(v) => v.iter().map(|nla| nla.buffer_len()).sum(),
-            RegionSnapshotId(v) => size_of_val(v),
-            RegionChunks(v) => v.iter().map(|nla| nla.buffer_len()).sum(),
-            RegionChunk(v) => v.iter().map(|nla| nla.buffer_len()).sum(),
+            PortIbdevName(s)
+            | RegionName(s)
+            | InfoDriverName(s)
+            | InfoSerialNo(s)
+            | InfoVersionName(s)
+            | InfoVersionValue(s)
+            | FlashUpdateFileName(s)
+            | InfoBoardSerialNumber(s)
+            | ResoureceName(s)
+            | DpipeTableName(s)
+            | DpipeFieldName(s)
+            | BusName(s)
+            | Location(s)
+            | NetdevName(s)
+            | TrapName(s)
+            | TrapGroupName(s)
+            | HealthReporterName(s)
+            | RateNodeName(s)
+            | DpipeHeaderName(s)
+            | RateParentNodeName(s)
+            | FmsgObjName(s)
+            | FlashUpdateComponent(s)
+            | FlashUpdateStatusMsg(s)
+            | ParamName(s) => s.buf_len(),
+
+            ParamValueList(v)
+            | ParamValueData(v)
+            | RegionSnapshots(v)
+            | RegionSnapshot(v)
+            | RegionChunks(v)
+            | RegionChunk(v)
+            | RemoteReloadStats(v)
+            | ReloadActionInfo(v)
+            | ReloadActionStats(v)
+            | DevStats(v)
+            | ReloadStats(v)
+            | ReloadStatsEntry(v)
+            | InfoVersionFixed(v)
+            | InfoVersionRunning(v)
+            | InfoVersionStored(v)
+            | DpipeTables(v)
+            | DpipeTable(v)
+            | DpipeTableMatches(v)
+            | DpipeTableActions(v)
+            | DpipeEntries(v)
+            | DpipeEntry(v)
+            | DpipeEntryMatchValues(v)
+            | DpipeEntryActionValues(v)
+            | DpipeMatch(v)
+            | DpipeMatchValue(v)
+            | DpipeAction(v)
+            | DpipeActionValue(v)
+            | DpipeHeaders(v)
+            | DpipeHader(v)
+            | DpipeHeaderFields(v)
+            | DpipeField(v)
+            | ResourceList(v)
+            | Resource(v)
+            | PortFunction(v)
+            | Fmsg(v)
+            | FmsgObjValueData(v)
+            | HealthReporter(v)
+            | Stats(v)
+            | TrapMetadata(v)
+            | Param(v) => v.buf_len(),
+
             RegionChunkData(nla) => nla.len(),
-            RegionChunkOffset(v) => size_of_val(v),
-            RegionChunkSize(v) => size_of_val(v),
-            InfoDriverName(s) => s.len() + 1,
-            InfoSerialNo(s) => s.len() + 1,
-            InfoVersionFixed(v) => v.iter().map(|nla| nla.buffer_len()).sum(),
-            InfoVersionRunning(v) => v.iter().map(|nla| nla.buffer_len()).sum(),
-            InfoVersionStored(v) => v.iter().map(|nla| nla.buffer_len()).sum(),
-            InfoVersionName(s) => s.len() + 1,
-            InfoVersionValue(s) => s.len() + 1,
-            FlashUpdateFileName(s) => s.len() + 1,
-            ReloadStatus(v) => size_of_val(v),
-            ReloadAction(v) => size_of_val(v),
-            DevStats(v) => v.iter().map(|nla| nla.buffer_len()).sum(),
-            ReloadStats(v) => v.iter().map(|nla| nla.buffer_len()).sum(),
-            ReloadStatsEntry(v) => v.iter().map(|nla| nla.buffer_len()).sum(),
-            ReloadStatsLimit(v) => size_of_val(v),
-            ReloadStatsValue(v) => size_of_val(v),
-            RemoteReloadStats(v) => v.iter().map(|nla| nla.buffer_len()).sum(),
-            ReloadActionInfo(v) => v.iter().map(|nla| nla.buffer_len()).sum(),
-            ReloadActionStats(v) => v.iter().map(|nla| nla.buffer_len()).sum(),
-            RegionMaxSnapshots(v) => size_of_val(v),
-            PortIbdevName(s) => s.len() + 1,
-            PortSplitCount(v) => size_of_val(v),
-            PortSplitGroup(v) => size_of_val(v),
-            SbIndex(v) => size_of_val(v),
-            SbSize(v) => size_of_val(v),
-            SbIngressPoolCount(v) => size_of_val(v),
-            SbEgressPoolCount(v) => size_of_val(v),
-            SbIngressTcCount(v) => size_of_val(v),
-            SbEgressTcCount(v) => size_of_val(v),
-            SbPoolIndex(v) => size_of_val(v),
-            SbPoolType(v) => size_of_val(v),
-            SbPoolSize(v) => size_of_val(v),
-            SbPoolThresholdType(v) => size_of_val(v),
-            SbPoolThreshold(v) => size_of_val(v),
-            SbTcIndex(v) => size_of_val(v),
-            SbOccCur(v) => size_of_val(v),
-            SbOccMax(v) => size_of_val(v),
-            EswitchMode(v) => size_of_val(v),
-            EswitchInlineMode(v) => size_of_val(v),
-            DpipeTables(v) => v.iter().map(|nla| nla.buffer_len()).sum(),
-            DpipeTable(v) => v.iter().map(|nla| nla.buffer_len()).sum(),
-            DpipeTableName(s) => s.len() + 1,
-            DpipeTableSize(v) => size_of_val(v),
-            DpipeTableMatches(v) => v.iter().map(|nla| nla.buffer_len()).sum(),
-            DpipeTableActions(v) => v.iter().map(|nla| nla.buffer_len()).sum(),
-            DpipeTableCountersEnabled(v) => size_of_val(v),
-            DpipeEntries(v) => v.iter().map(|nla| nla.buffer_len()).sum(),
-            DpipeEntry(v) => v.iter().map(|nla| nla.buffer_len()).sum(),
-            DpipeEntryIndex(v) => size_of_val(v),
-            DpipeEntryMatchValues(v) => v.iter().map(|nla| nla.buffer_len()).sum(),
-            DpipeEntryActionValues(v) => v.iter().map(|nla| nla.buffer_len()).sum(),
-            DpipeEntryCounter(v) => size_of_val(v),
-            DpipeMatch(v) => v.iter().map(|nla| nla.buffer_len()).sum(),
-            DpipeMatchValue(v) => v.iter().map(|nla| nla.buffer_len()).sum(),
-            DpipeMatchType(v) => size_of_val(v),
-            DpipeAction(v) => v.iter().map(|nla| nla.buffer_len()).sum(),
-            DpipeActionValue(v) => v.iter().map(|nla| nla.buffer_len()).sum(),
-            DpipeActionType(v) => size_of_val(v),
-            DpipeValue(v) => size_of_val(v),
-            DpipeValueMask(v) => size_of_val(v),
-            DpipeValueMapping(v) => size_of_val(v),
-            DpipeHeaders(v) => v.iter().map(|nla| nla.buffer_len()).sum(),
-            DpipeHader(v) => v.iter().map(|nla| nla.buffer_len()).sum(),
-            DpipeHeaderName(s) => s.len() + 1,
-            DpipeHeaderId(v) => size_of_val(v),
-            DpipeHeaderFields(v) => v.iter().map(|nla| nla.buffer_len()).sum(),
-            DpipeHeaderGlobal(v) => size_of_val(v),
-            DpipeHeaderIndex(v) => size_of_val(v),
-            DpipeField(v) => v.iter().map(|nla| nla.buffer_len()).sum(),
-            DpipeFieldName(s) => s.len() + 1,
-            DpipeFieldId(v) => size_of_val(v),
-            DpipeFieldBitwidth(v) => size_of_val(v),
-            DpipeFieldMappingType(v) => size_of_val(v),
-            EswitchEncapMode(v) => size_of_val(v),
-            ResourceList(v) => v.iter().map(|nla| nla.buffer_len()).sum(),
-            Resource(v) => v.iter().map(|nla| nla.buffer_len()).sum(),
-            ResoureceName(s) => s.len() + 1,
-            ResourceId(v) => size_of_val(v),
-            ResourceSize(v) => size_of_val(v),
-            ResourceSizeNew(v) => size_of_val(v),
-            ResourceSizeValid(v) => size_of_val(v),
-            ResourceSizeMin(v) => size_of_val(v),
-            ResourceSizeMax(v) => size_of_val(v),
-            ResourceSizeGran(v) => size_of_val(v),
-            ResourceUnit(v) => size_of_val(v),
-            ResourceOcc(v) => size_of_val(v),
-            DpipeTableResourceId(v) => size_of_val(v),
-            DpipeTableResourceUnit(v) => size_of_val(v),
-            PortFunction(v) => v.iter().map(|nla| nla.buffer_len()).sum(),
-            InfoBoardSerialNumber(s) => s.len() + 1,
-            PortLanes(v) => size_of_val(v),
-            PortSplittable(v) => size_of_val(v),
-            PortExternal(v) => size_of_val(v),
-            PortControllerNo(v) => size_of_val(v),
-            FlashUpdateStatusTimeout(v) => size_of_val(v),
-            FlashUpdateOverWriteMask(v) => size_of_val(v),
-            ReloadActionPerformed(v) => size_of_val(v),
-            ReloadLimits(v) => size_of_val(v),
-            PortPciSfNo(v) => size_of_val(v),
-            RateType(v) => size_of_val(v),
-            RateTxShare(v) => size_of_val(v),
-            RateTxMax(v) => size_of_val(v),
-            RateNodeName(s) => s.len() + 1,
-            RateParentNodeName(s) => s.len() + 1,
-            SbPoolCellSize(v) => size_of_val(v),
-            Fmsg(v) => v.iter().map(|nla| nla.buffer_len()).sum(),
-            FmsgObjNestStart(v) => size_of_val(v),
-            FmsgPairNestStart(v) => size_of_val(v),
-            FmsgArrNestStart(v) => size_of_val(v),
-            FmsgNestEnd(v) => size_of_val(v),
-            FmsgObjName(s) => s.len() + 1,
-            FmsgObjValueType(v) => size_of_val(v),
-            FmsgObjValueData(v) => v.iter().map(|nla| nla.buffer_len()).sum(),
-            HealthReporter(v) => v.iter().map(|nla| nla.buffer_len()).sum(),
-            HealthReporterName(s) => s.len() + 1,
-            HealthReporterState(v) => size_of_val(v),
-            HealthReporterErrCount(v) => size_of_val(v),
-            HealthReporterRecoverCount(v) => size_of_val(v),
-            HealthReporterDumpTs(v) => size_of_val(v),
-            HealthReporterGracefulPeriod(v) => size_of_val(v),
-            HealthReporterAucoRecover(v) => size_of_val(v),
-            FlashUpdateComponent(s) => s.len() + 1,
-            FlashUpdateStatusMsg(s) => s.len() + 1,
-            FlashUpdateStatusDone(v) => size_of_val(v),
-            FlashUpdateStatusTotal(v) => size_of_val(v),
-            PortPciPfNumber(v) => size_of_val(v),
-            PortPciVfNumber(v) => size_of_val(v),
-            Stats(v) => v.iter().map(|nla| nla.buffer_len()).sum(),
-            TrapName(s) => s.len() + 1,
-            TrapAction(v) => size_of_val(v),
-            TrapType(v) => size_of_val(v),
-            TrapGeneric(v) => size_of_val(v),
-            TrapMetadata(v) => v.iter().map(|nla| nla.buffer_len()).sum(),
-            TrapGroupName(s) => s.len() + 1,
-            HealthReporterDumpTsNs(v) => size_of_val(v),
-            NetnsFd(v) => size_of_val(v),
-            NetnsPid(v) => size_of_val(v),
-            NetnsId(v) => size_of_val(v),
-            HealthReporterAutoDump(v) => size_of_val(v),
-            TrapPolicerId(v) => size_of_val(v),
-            TrapPolicerRate(v) => size_of_val(v),
-            TrapPolicerBurst(v) => size_of_val(v),
+            _ => 0,
         }
     }
 
     fn is_nested(&self) -> bool {
         use GenlDevlinkAttrs::*;
         match self {
-            BusName(_) => false,
-            Location(_) => false,
-            PortIndex(_) => false,
-            PortType(_) => false,
-            DesiredType(_) => false,
-            NetdevIndex(_) => false,
-            NetdevName(_) => false,
-            PortFlavour(_) => false,
-            PortNumber(_) => false,
-            Param(_) => true,
-            ParamName(_) => false,
-            ParamGeneric(_) => false,
-            ParamType(_) => false,
-            ParamValueList(_) => true,
-            ParamValue(_) => true,
-            ParamValueData(_) => false,
-            ParamValueCmode(_) => false,
-            RegionName(_) => false,
-            RegionSize(_) => false,
-            RegionSnapshots(_) => true,
-            RegionSnapshot(_) => true,
-            RegionSnapshotId(_) => false,
-            RegionChunks(_) => true,
-            RegionChunk(_) => true,
-            RegionChunkData(_) => false,
-            RegionChunkOffset(_) => false,
-            RegionChunkSize(_) => false,
-            InfoDriverName(_) => false,
-            InfoSerialNo(_) => false,
-            InfoVersionFixed(_) => true,
-            InfoVersionRunning(_) => true,
-            InfoVersionStored(_) => true,
-            InfoVersionName(_) => false,
-            InfoVersionValue(_) => false,
-            FlashUpdateFileName(_) => false,
-            ReloadStatus(_) => false,
-            ReloadAction(_) => false,
-            DevStats(_) => true,
-            ReloadStats(_) => true,
-            ReloadStatsEntry(_) => true,
-            ReloadStatsLimit(_) => false,
-            ReloadStatsValue(_) => false,
-            RemoteReloadStats(_) => true,
-            ReloadActionInfo(_) => true,
-            ReloadActionStats(_) => true,
-            RegionMaxSnapshots(_) => false,
-            PortPciPfNumber(_) => false,
-            PortPciVfNumber(_) => false,
-            Stats(_) => true,
-            TrapName(_) => false,
-            TrapAction(_) => false,
-            TrapType(_) => false,
-            TrapGeneric(_) => false,
-            TrapMetadata(_) => true,
-            TrapGroupName(_) => false,
-            HealthReporter(_) => true,
-            HealthReporterName(_) => false,
-            HealthReporterState(_) => false,
-            HealthReporterErrCount(_) => false,
-            HealthReporterRecoverCount(_) => false,
-            HealthReporterDumpTs(_) => false,
-            HealthReporterGracefulPeriod(_) => false,
-            HealthReporterAucoRecover(_) => false,
-            FlashUpdateComponent(_) => false,
-            FlashUpdateStatusMsg(_) => false,
-            FlashUpdateStatusDone(_) => false,
-            FlashUpdateStatusTotal(_) => false,
-            SbPoolCellSize(_) => false,
-            Fmsg(_) => true,
-            FmsgObjNestStart(_) => false,
-            FmsgPairNestStart(_) => false,
-            FmsgArrNestStart(_) => false,
-            FmsgNestEnd(_) => false,
-            FmsgObjName(_) => false,
-            FmsgObjValueType(_) => false,
-            FmsgObjValueData(_) => false,
-            HealthReporterDumpTsNs(_) => false,
-            NetnsFd(_) => false,
-            NetnsPid(_) => false,
-            NetnsId(_) => false,
-            HealthReporterAutoDump(_) => false,
-            TrapPolicerId(_) => false,
-            TrapPolicerRate(_) => false,
-            TrapPolicerBurst(_) => false,
-            PortFunction(_) => true,
-            InfoBoardSerialNumber(_) => false,
-            PortLanes(_) => false,
-            PortSplittable(_) => false,
-            PortExternal(_) => false,
-            PortControllerNo(_) => false,
-            FlashUpdateStatusTimeout(_) => false,
-            FlashUpdateOverWriteMask(_) => false,
-            ReloadActionPerformed(_) => false,
-            ReloadLimits(_) => false,
-            PortPciSfNo(_) => false,
-            RateType(_) => false,
-            RateTxShare(_) => false,
-            RateTxMax(_) => false,
-            RateNodeName(_) => false,
-            RateParentNodeName(_) => false,
-            PortSplitCount(_) => false,
-            PortSplitGroup(_) => false,
-            SbIndex(_) => false,
-            SbSize(_) => false,
-            SbIngressPoolCount(_) => false,
-            SbEgressPoolCount(_) => false,
-            SbIngressTcCount(_) => false,
-            SbEgressTcCount(_) => false,
-            SbPoolIndex(_) => false,
-            SbPoolType(_) => false,
-            SbPoolSize(_) => false,
-            SbPoolThresholdType(_) => false,
-            SbPoolThreshold(_) => false,
-            SbTcIndex(_) => false,
-            SbOccCur(_) => false,
-            SbOccMax(_) => false,
-            EswitchMode(_) => false,
-            EswitchInlineMode(_) => false,
-            DpipeTables(_) => true,
-            DpipeTable(_) => true,
-            DpipeTableName(_) => false,
-            DpipeTableSize(_) => false,
-            DpipeTableMatches(_) => true,
-            DpipeTableActions(_) => true,
-            DpipeTableCountersEnabled(_) => false,
-            DpipeEntries(_) => true,
-            DpipeEntry(_) => true,
-            DpipeEntryIndex(_) => false,
-            DpipeEntryMatchValues(_) => true,
-            DpipeEntryActionValues(_) => true,
-            DpipeEntryCounter(_) => false,
-            DpipeMatch(_) => true,
-            DpipeMatchValue(_) => true,
-            DpipeMatchType(_) => false,
-            DpipeAction(_) => true,
-            DpipeActionValue(_) => true,
-            DpipeActionType(_) => false,
-            DpipeValue(_) => false,
-            DpipeValueMask(_) => false,
-            DpipeValueMapping(_) => false,
-            DpipeHeaders(_) => true,
-            DpipeHader(_) => true,
-            DpipeHeaderName(_) => false,
-            DpipeHeaderId(_) => false,
-            DpipeHeaderFields(_) => true,
-            DpipeHeaderGlobal(_) => false,
-            DpipeHeaderIndex(_) => false,
-            DpipeField(_) => true,
-            DpipeFieldName(_) => false,
-            DpipeFieldId(_) => false,
-            DpipeFieldBitwidth(_) => false,
-            DpipeFieldMappingType(_) => false,
-            EswitchEncapMode(_) => false,
-            ResourceList(_) => true,
-            Resource(_) => true,
-            ResoureceName(_) => false,
-            ResourceId(_) => false,
-            ResourceSize(_) => false,
-            ResourceSizeNew(_) => false,
-            ResourceSizeValid(_) => false,
-            ResourceSizeMin(_) => false,
-            ResourceSizeMax(_) => false,
-            ResourceSizeGran(_) => false,
-            ResourceUnit(_) => false,
-            ResourceOcc(_) => false,
-            DpipeTableResourceId(_) => false,
-            DpipeTableResourceUnit(_) => false,
-            PortIbdevName(_) => false,
+            Param(_)
+            | ParamValueList(_)
+            | ParamValue(_)
+            | RegionSnapshots(_)
+            | RegionSnapshot(_)
+            | RegionChunks(_)
+            | RegionChunk(_)
+            | InfoVersionFixed(_)
+            | InfoVersionRunning(_)
+            | InfoVersionStored(_)
+            | DevStats(_)
+            | ReloadStats(_)
+            | ReloadStatsEntry(_)
+            | RemoteReloadStats(_)
+            | ReloadActionInfo(_)
+            | ReloadActionStats(_)
+            | Stats(_)
+            | TrapMetadata(_)
+            | HealthReporter(_)
+            | Fmsg(_)
+            | PortFunction(_)
+            | DpipeTables(_)
+            | DpipeTable(_)
+            | DpipeTableMatches(_)
+            | DpipeTableActions(_)
+            | DpipeEntries(_)
+            | DpipeEntry(_)
+            | DpipeEntryMatchValues(_)
+            | DpipeEntryActionValues(_)
+            | DpipeMatch(_)
+            | DpipeMatchValue(_)
+            | DpipeAction(_)
+            | DpipeActionValue(_)
+            | DpipeHeaders(_)
+            | DpipeHader(_)
+            | DpipeHeaderFields(_)
+            | DpipeField(_)
+            | ResourceList(_)
+            | Resource(_) => true,
+            _ => false,
         }
-        
     }
 
     fn kind(&self) -> u16 {
@@ -595,10 +401,16 @@ impl Nla for GenlDevlinkAttrs {
             HealthReporterName(_) => DEVLINK_ATTR_HEALTH_REPORTER_NAME,
             HealthReporterState(_) => DEVLINK_ATTR_HEALTH_REPORTER_STATE,
             HealthReporterErrCount(_) => DEVLINK_ATTR_HEALTH_REPORTER_ERR_COUNT,
-            HealthReporterRecoverCount(_) => DEVLINK_ATTR_HEALTH_REPORTER_RECOVER_COUNT,
+            HealthReporterRecoverCount(_) => {
+                DEVLINK_ATTR_HEALTH_REPORTER_RECOVER_COUNT
+            }
             HealthReporterDumpTs(_) => DEVLINK_ATTR_HEALTH_REPORTER_DUMP_TS,
-            HealthReporterGracefulPeriod(_) => DEVLINK_ATTR_HEALTH_REPORTER_GRACEFUL_PERIOD,
-            HealthReporterAucoRecover(_) => DEVLINK_ATTR_HEALTH_REPORTER_AUTO_RECOVER,
+            HealthReporterGracefulPeriod(_) => {
+                DEVLINK_ATTR_HEALTH_REPORTER_GRACEFUL_PERIOD
+            }
+            HealthReporterAucoRecover(_) => {
+                DEVLINK_ATTR_HEALTH_REPORTER_AUTO_RECOVER
+            }
             FlashUpdateComponent(_) => DEVLINK_ATTR_FLASH_UPDATE_COMPONENT,
             FlashUpdateStatusMsg(_) => DEVLINK_ATTR_FLASH_UPDATE_STATUS_MSG,
             FlashUpdateStatusDone(_) => DEVLINK_ATTR_FLASH_UPDATE_STATUS_DONE,
@@ -612,7 +424,9 @@ impl Nla for GenlDevlinkAttrs {
             FmsgObjName(_) => DEVLINK_ATTR_FMSG_OBJ_NAME,
             FmsgObjValueType(_) => DEVLINK_ATTR_FMSG_OBJ_VALUE_TYPE,
             FmsgObjValueData(_) => DEVLINK_ATTR_FMSG_OBJ_VALUE_DATA,
-            HealthReporterDumpTsNs(_) => DEVLINK_ATTR_HEALTH_REPORTER_DUMP_TS_NS,
+            HealthReporterDumpTsNs(_) => {
+                DEVLINK_ATTR_HEALTH_REPORTER_DUMP_TS_NS
+            }
             NetnsFd(_) => DEVLINK_ATTR_NETNS_FD,
             NetnsPid(_) => DEVLINK_ATTR_NETNS_PID,
             NetnsId(_) => DEVLINK_ATTR_NETNS_ID,
@@ -626,8 +440,12 @@ impl Nla for GenlDevlinkAttrs {
             PortSplittable(_) => DEVLINK_ATTR_PORT_SPLITTABLE,
             PortExternal(_) => DEVLINK_ATTR_PORT_EXTERNAL,
             PortControllerNo(_) => DEVLINK_ATTR_PORT_CONTROLLER_NUMBER,
-            FlashUpdateStatusTimeout(_) => DEVLINK_ATTR_FLASH_UPDATE_STATUS_TIMEOUT,
-            FlashUpdateOverWriteMask(_) => DEVLINK_ATTR_FLASH_UPDATE_OVERWRITE_MASK,
+            FlashUpdateStatusTimeout(_) => {
+                DEVLINK_ATTR_FLASH_UPDATE_STATUS_TIMEOUT
+            }
+            FlashUpdateOverWriteMask(_) => {
+                DEVLINK_ATTR_FLASH_UPDATE_OVERWRITE_MASK
+            }
             ReloadActionPerformed(_) => DEVLINK_ATTR_RELOAD_ACTIONS_PERFORMED,
             ReloadLimits(_) => DEVLINK_ATTR_RELOAD_LIMITS,
             PortPciSfNo(_) => DEVLINK_ATTR_PORT_PCI_SF_NUMBER,
@@ -660,7 +478,9 @@ impl Nla for GenlDevlinkAttrs {
             DpipeTableSize(_) => DEVLINK_ATTR_DPIPE_TABLE_SIZE,
             DpipeTableMatches(_) => DEVLINK_ATTR_DPIPE_TABLE_MATCHES,
             DpipeTableActions(_) => DEVLINK_ATTR_DPIPE_TABLE_ACTIONS,
-            DpipeTableCountersEnabled(_) => DEVLINK_ATTR_DPIPE_TABLE_COUNTERS_ENABLED,
+            DpipeTableCountersEnabled(_) => {
+                DEVLINK_ATTR_DPIPE_TABLE_COUNTERS_ENABLED
+            }
             DpipeEntries(_) => DEVLINK_ATTR_DPIPE_ENTRIES,
             DpipeEntry(_) => DEVLINK_ATTR_DPIPE_ENTRY,
             DpipeEntryIndex(_) => DEVLINK_ATTR_DPIPE_ENTRY_INDEX,
@@ -702,13 +522,33 @@ impl Nla for GenlDevlinkAttrs {
             ResourceUnit(_) => DEVLINK_ATTR_RESOURCE_UNIT,
             ResourceOcc(_) => DEVLINK_ATTR_RESOURCE_OCC,
             DpipeTableResourceId(_) => DEVLINK_ATTR_DPIPE_TABLE_RESOURCE_ID,
-            DpipeTableResourceUnit(_) => DEVLINK_ATTR_DPIPE_TABLE_RESOURCE_UNITS,
+            DpipeTableResourceUnit(_) => {
+                DEVLINK_ATTR_DPIPE_TABLE_RESOURCE_UNITS
+            }
             PortIbdevName(_) => DEVLINK_ATTR_PORT_IBDEV_NAME,
         }
     }
 
     fn emit_value(&self, buffer: &mut [u8]) {
         use GenlDevlinkAttrs::*;
+
+        // if self.type_id() == TypeId::of::<u8>() {
+        //     buffer[0] = *self. as_inner();
+        //     return;
+        // } else if self.type_id() == TypeId::of::<u16>() {
+        //     NativeEndian::write_u16(buffer, *self.as_inner());
+        //     return;
+        // } else if self.type_id() == TypeId::of::<u32>() {
+        //     NativeEndian::write_u32(buffer, *self.as_inner());
+        //     return;
+        // } else if self.type_id() == TypeId::of::<u64>() {
+        //     NativeEndian::write_u64(buffer, *self.as_inner());
+        //     return;
+        // } else if self.type_id() == TypeId::of::<bool>() {
+        //     buffer[0] = *self.as_inner() as u8;
+        //     return;
+        // }
+
         match self {
             BusName(s) => {
                 buffer[..s.len()].copy_from_slice(s.as_bytes());
@@ -848,9 +688,13 @@ impl Nla for GenlDevlinkAttrs {
             }
             HealthReporterState(v) => buffer[0] = *v,
             HealthReporterErrCount(v) => NativeEndian::write_u64(buffer, *v),
-            HealthReporterRecoverCount(v) => NativeEndian::write_u64(buffer, *v),
+            HealthReporterRecoverCount(v) => {
+                NativeEndian::write_u64(buffer, *v)
+            }
             HealthReporterDumpTs(v) => NativeEndian::write_u64(buffer, *v),
-            HealthReporterGracefulPeriod(v) => NativeEndian::write_u64(buffer, *v),
+            HealthReporterGracefulPeriod(v) => {
+                NativeEndian::write_u64(buffer, *v)
+            }
             HealthReporterAucoRecover(v) => buffer[0] = *v,
             FlashUpdateComponent(s) => {
                 buffer[..s.len()].copy_from_slice(s.as_bytes());

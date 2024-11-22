@@ -97,6 +97,7 @@ pub enum GenlDevlinkCmd {
 }
 
 impl GenlDevlinkCmd {
+    /// Check if commad provides dump capability
     pub fn dump_capable(&self) -> bool {
         use GenlDevlinkCmd::*;
         match self {
@@ -120,13 +121,14 @@ impl GenlDevlinkCmd {
 }
 
 impl From<GenlDevlinkCmd> for u8 {
+    /// Binding enum field to the devlink command code
     fn from(cmd: GenlDevlinkCmd) -> u8 {
         use GenlDevlinkCmd::*;
         match cmd {
             GetDevices => DEVLINK_CMD_GET,
             SetDevice => DEVLINK_CMD_SET,
             NewDevice => DEVLINK_CMD_NEW,
-            DeleteDevice => DEVLINK_CMD_DEL,            
+            DeleteDevice => DEVLINK_CMD_DEL,
             GetPort => DEVLINK_CMD_PORT_GET,
             SetPort => DEVLINK_CMD_PORT_SET,
             NewPort => DEVLINK_CMD_PORT_NEW,
@@ -184,11 +186,11 @@ impl From<GenlDevlinkCmd> for u8 {
             FlashUdpateEnd => DEVLINK_CMD_FLASH_UPDATE_END,
             FlashUdpateStatus => DEVLINK_CMD_FLASH_UPDATE_STATUS,
             GetTrap => DEVLINK_CMD_TRAP_GET,
-            SetTrap => DEVLINK_CMD_TRAP_SET, 
+            SetTrap => DEVLINK_CMD_TRAP_SET,
             NewTrap => DEVLINK_CMD_TRAP_NEW,
             DeleteTrap => DEVLINK_CMD_TRAP_DEL,
             GetTrapGroup => DEVLINK_CMD_TRAP_GROUP_GET,
-            SetTrapGroup => DEVLINK_CMD_TRAP_GROUP_SET, 
+            SetTrapGroup => DEVLINK_CMD_TRAP_GROUP_SET,
             NewTrapGroup => DEVLINK_CMD_TRAP_GROUP_NEW,
             DeleteTrapGroup => DEVLINK_CMD_TRAP_GROUP_DEL,
             GetTrapPolicer => DEVLINK_CMD_TRAP_POLICER_GET,
@@ -207,6 +209,7 @@ impl From<GenlDevlinkCmd> for u8 {
 impl TryFrom<u8> for GenlDevlinkCmd {
     type Error = DecodeError;
 
+    /// Binding devlink command code to the enum field
     fn try_from(value: u8) -> Result<Self, Self::Error> {
         use GenlDevlinkCmd::*;
         Ok(match value {
@@ -220,19 +223,19 @@ impl TryFrom<u8> for GenlDevlinkCmd {
             DEVLINK_CMD_PORT_DEL => DeletePort,
             DEVLINK_CMD_PORT_SPLIT => SplitPort,
             DEVLINK_CMD_PORT_UNSPLIT => UnsplitPort,
-            DEVLINK_CMD_SB_GET => GetSb,		/* can dump */
+            DEVLINK_CMD_SB_GET => GetSb, /* can dump */
             DEVLINK_CMD_SB_SET => SetSb,
             DEVLINK_CMD_SB_NEW => NewSb,
             DEVLINK_CMD_SB_DEL => DeleteSb,
-            DEVLINK_CMD_SB_POOL_GET => GetSbPool,	/* can dump */
+            DEVLINK_CMD_SB_POOL_GET => GetSbPool, /* can dump */
             DEVLINK_CMD_SB_POOL_SET => SetSbPool,
             DEVLINK_CMD_SB_POOL_NEW => NewSbPool,
             DEVLINK_CMD_SB_POOL_DEL => DeleteSbPool,
-            DEVLINK_CMD_SB_PORT_POOL_GET => GetSbPortPool,	/* can dump */
+            DEVLINK_CMD_SB_PORT_POOL_GET => GetSbPortPool, /* can dump */
             DEVLINK_CMD_SB_PORT_POOL_SET => SetSbPortPool,
             DEVLINK_CMD_SB_PORT_POOL_NEW => NewSbPortPool,
             DEVLINK_CMD_SB_PORT_POOL_DEL => DeleteSbPortPool,
-            DEVLINK_CMD_SB_TC_POOL_BIND_GET => GetSbTcPoolBind,	/* can dump */
+            DEVLINK_CMD_SB_TC_POOL_BIND_GET => GetSbTcPoolBind, /* can dump */
             DEVLINK_CMD_SB_TC_POOL_BIND_SET => SetSbTcPoolBind,
             DEVLINK_CMD_SB_TC_POOL_BIND_NEW => NewSbTcPoolBind,
             DEVLINK_CMD_SB_TC_POOL_BIND_DEL => DeleteSbTcPoolBind,
@@ -256,7 +259,7 @@ impl TryFrom<u8> for GenlDevlinkCmd {
             DEVLINK_CMD_REGION_NEW => CreatRegion,
             DEVLINK_CMD_REGION_DEL => DeleteRegion,
             DEVLINK_CMD_REGION_READ => ReadRegion,
-            DEVLINK_CMD_PORT_PARAM_GET => GetPortParam,	/* can dump */
+            DEVLINK_CMD_PORT_PARAM_GET => GetPortParam, /* can dump */
             DEVLINK_CMD_PORT_PARAM_SET => SetPortParam,
             DEVLINK_CMD_PORT_PARAM_NEW => NewPortParam,
             DEVLINK_CMD_PORT_PARAM_DEL => DeletePortParam,
@@ -270,20 +273,20 @@ impl TryFrom<u8> for GenlDevlinkCmd {
             DEVLINK_CMD_FLASH_UPDATE => UpdateFlash,
             DEVLINK_CMD_FLASH_UPDATE_END => FlashUdpateEnd,
             DEVLINK_CMD_FLASH_UPDATE_STATUS => FlashUdpateStatus,
-            DEVLINK_CMD_TRAP_GET => GetTrap,		/* can dump */
+            DEVLINK_CMD_TRAP_GET => GetTrap, /* can dump */
             DEVLINK_CMD_TRAP_SET => SetTrap,
             DEVLINK_CMD_TRAP_NEW => NewTrap,
             DEVLINK_CMD_TRAP_DEL => DeleteTrap,
-            DEVLINK_CMD_TRAP_GROUP_GET => GetTrapGroup,	/* can dump */
+            DEVLINK_CMD_TRAP_GROUP_GET => GetTrapGroup, /* can dump */
             DEVLINK_CMD_TRAP_GROUP_SET => SetTrapGroup,
             DEVLINK_CMD_TRAP_GROUP_NEW => NewTrapGroup,
             DEVLINK_CMD_TRAP_GROUP_DEL => DeleteTrapGroup,
-            DEVLINK_CMD_TRAP_POLICER_GET => GetTrapPolicer,	/* can dump */
+            DEVLINK_CMD_TRAP_POLICER_GET => GetTrapPolicer, /* can dump */
             DEVLINK_CMD_TRAP_POLICER_SET => SetTrapPolicer,
             DEVLINK_CMD_TRAP_POLICER_NEW => NewTrapPolicer,
             DEVLINK_CMD_TRAP_POLICER_DEL => DeleteTrapPolicer,
             DEVLINK_CMD_HEALTH_REPORTER_TEST => TestHealthReport,
-            DEVLINK_CMD_RATE_GET => GetRate,		/* can dump */
+            DEVLINK_CMD_RATE_GET => GetRate, /* can dump */
             DEVLINK_CMD_RATE_SET => SetRate,
             DEVLINK_CMD_RATE_NEW => NewRate,
             DEVLINK_CMD_RATE_DEL => DeleteRate,
@@ -305,6 +308,7 @@ pub struct GenlDevlink {
     pub nldev: Vec<GenlDevlinkAttrs>,
 }
 
+/// Netlink generic family trait implementation for devlink family
 impl GenlFamily for GenlDevlink {
     fn family_name() -> &'static str {
         "devlink"
@@ -324,34 +328,41 @@ impl GenlFamily for GenlDevlink {
 }
 
 impl Emitable for GenlDevlink {
+    /// Serialize devlink attributes as a netlink generic payload
+    /// Netlink generic header is serialized by the caller
     fn emit(&self, buffer: &mut [u8]) {
         self.nldev.as_slice().emit(buffer)
     }
 
+    /// Counts the buffer length of the devlink attributes
     fn buffer_len(&self) -> usize {
         self.nldev.as_slice().buffer_len()
     }
 }
 
 impl ParseableParametrized<[u8], GenlHeader> for GenlDevlink {
+    /// Parse netlink generic header with the payload focused on devlink attributes
     fn parse_with_param(
         buf: &[u8],
         header: GenlHeader,
     ) -> Result<Self, DecodeError> {
         Ok(Self {
             cmd: header.cmd.try_into()?,
-            nldev: parse_ctrlnldev(buf)?,
+            nldev: parse_devlink_attributes(buf)?,
         })
     }
 }
+// todo: zmienic nazwe funkcji i dooda do kazdej metody opis
 
-fn parse_ctrlnldev(buf: &[u8]) -> Result<Vec<GenlDevlinkAttrs>, DecodeError> {
+/// Iterate over the devlink attributes and parse them
+fn parse_devlink_attributes(
+    buf: &[u8],
+) -> Result<Vec<GenlDevlinkAttrs>, DecodeError> {
     let nldev = NlasIterator::new(buf)
         .map(|nlattr| {
             nlattr.and_then(|nlattr| GenlDevlinkAttrs::parse(&nlattr))
         })
         .collect::<Result<Vec<_>, _>>()
         .context("failed to parse control message attributes")?;
-
     Ok(nldev)
 }
