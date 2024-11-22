@@ -9,8 +9,10 @@ use netlink_packet_utils::{
     traits::*,
     DecodeError,
 };
-use std::mem::size_of_val;
+use std::any::{Any, TypeId};
+//use enum_as_inner::EnumAsInner;
 
+//EnumAsInner
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum GenlDevlinkAttrs {
     BusName(String),
@@ -184,199 +186,42 @@ pub enum GenlDevlinkAttrs {
 }
 
 trait TypeInfo {
-//    fn type_of(&self) -> &'static str;
     fn buf_len(&self) -> usize;
 }
 
-// impl<T> TypeInfo for T {
-//     fn type_of(&self) -> &'static str {
-//         std::any::type_name::<T>()
-//     }
-//     fn buffer_len(&self) -> usize {
-//         size_of_val(self)
-//     }
-// }
-
 impl TypeInfo for Vec<GenlDevlinkAttrs> {
-    // fn type_of(&self) -> &'static str {
-    //     "Vec"
-    // }
     fn buf_len(&self) -> usize {
         self.iter().map(|nla| nla.buffer_len()).sum()
     }
 }
 impl TypeInfo for Vec<u8> {
-    // fn type_of(&self) -> &'static str {
-    //     "Vec"
-    // }
     fn buf_len(&self) -> usize {
         self.len()
     }
 }
-impl TypeInfo for u32 {
-    // fn type_of(&self) -> &'static str {
-    //     "u32"
-    // }
-    fn buf_len(&self) -> usize {
-        size_of_val(self)
-    }
-}
-
-impl TypeInfo for u64 {
-    // fn type_of(&self) -> &'static str {
-    //     "u64"
-    // }
-    fn buf_len(&self) -> usize {
-        size_of_val(self)
-    }
-}
-
-impl TypeInfo for u16 {
-    // fn type_of(&self) -> &'static str {
-    //     "u16"
-    // }
-    fn buf_len(&self) -> usize {
-        size_of_val(self)
-    }
-}
-
-impl TypeInfo for u8 {
-    // fn type_of(&self) -> &'static str {
-    //     "u8"
-    // }
-    fn buf_len(&self) -> usize {
-        size_of_val(self)
-    }
-}
-
-impl TypeInfo for bool {
-    // fn type_of(&self) -> &'static str {
-    //     "bool"
-    // }
-    fn buf_len(&self) -> usize {
-        size_of_val(self)
-    }
-}
-
 impl TypeInfo for String {
-    // fn type_of(&self) -> &'static str {
-    //     "String"
-    // }
     fn buf_len(&self) -> usize {
         self.len() + 1
     }
 }
 
-// sprawdzic czy da sie zastosowac iteratior po wariantach (zdaje sie i tak bedzie trzeba rozdzielic obliczanie na typy zmiennych,
-// tak zeby na etapie kompilacji typ zmiennej byl zedfiniowany). Innym rozwiazaniem jest zastosowanie makra
-
-// sprawdzic czy mozna rozwiazac to po typie a nie listowac calosci
-// lub posortowac calosc
 impl Nla for GenlDevlinkAttrs {
     fn value_len(&self) -> usize {
         use GenlDevlinkAttrs::*;
+
+        if self.type_id() == TypeId::of::<u8>() {
+            return 1;
+        } else if self.type_id() == TypeId::of::<u16>() {
+            return 2;
+        } else if self.type_id() == TypeId::of::<u32>() {
+            return 4;
+        } else if self.type_id() == TypeId::of::<u64>() {
+            return 8;
+        } else if self.type_id() == TypeId::of::<bool>() {
+            return 1;
+        }
+        
         match self {
-            ParamType(v)
-            | ReloadStatus(v)
-            | HealthReporterAutoDump(v)
-            | ReloadAction(v)
-            | ReloadStatsLimit(v)
-            | SbPoolType(v)
-            | EswitchInlineMode(v)
-            | DpipeHeaderGlobal(v)
-            | SbPoolThresholdType(v)
-            | DpipeTableCountersEnabled(v)
-            | EswitchEncapMode(v)
-            | ResourceSizeValid(v)
-            | ResourceUnit(v)
-            | PortSplittable(v)
-            | PortExternal(v)
-            | FmsgObjValueType(v)
-            | HealthReporterState(v)
-            | HealthReporterAucoRecover(v)
-            | TrapAction(v)
-            | ParamValueCmode(v)
-            | TrapType(v) => v.buf_len(),
-
-            PortType(v)
-            | PortFlavour(v)
-            | DesiredType(v)
-            | SbIngressPoolCount(v)
-            | SbEgressPoolCount(v)
-            | SbIngressTcCount(v)
-            | SbEgressTcCount(v)
-            | SbPoolIndex(v)
-            | SbTcIndex(v)
-            | EswitchMode(v)
-            | RateType(v)
-            | PortPciPfNumber(v)
-            | PortPciVfNumber(v) => v.buf_len(),
-
-            PortIndex(v)
-            | PortNumber(v)
-            | NetdevIndex(v)
-            | ReloadStatsValue(v)
-            | RegionMaxSnapshots(v)
-            | PortSplitCount(v)
-            | PortSplitGroup(v)
-            | SbIndex(v)
-            | SbSize(v)
-            | RegionSnapshotId(v)
-            | SbPoolSize(v)
-            | SbPoolThreshold(v)
-            | SbOccCur(v)
-            | SbOccMax(v)
-            | DpipeMatchType(v)
-            | DpipeActionType(v)
-            | DpipeValue(v)
-            | DpipeValueMask(v)
-            | DpipeValueMapping(v)
-            | DpipeHeaderId(v)
-            | DpipeHeaderIndex(v)
-            | DpipeFieldId(v)
-            | DpipeFieldBitwidth(v)
-            | DpipeFieldMappingType(v)
-            | PortLanes(v)
-            | PortControllerNo(v)
-            | FlashUpdateStatusTimeout(v)
-            | FlashUpdateOverWriteMask(v)
-            | ReloadActionPerformed(v)
-            | ReloadLimits(v)
-            | PortPciSfNo(v)
-            | SbPoolCellSize(v)
-            | NetnsFd(v)
-            | NetnsPid(v)
-            | NetnsId(v)
-            | TrapPolicerId(v) => v.buf_len(),
-
-            RegionSize(v)
-            | ParamValue(v)
-            | RegionChunkOffset(v)
-            | RegionChunkSize(v)
-            | DpipeTableSize(v)
-            | DpipeEntryIndex(v)
-            | DpipeEntryCounter(v)
-            | ResourceId(v)
-            | ResourceSize(v)
-            | ResourceSizeNew(v)
-            | ResourceSizeMin(v)
-            | ResourceSizeMax(v)
-            | ResourceSizeGran(v)
-            | ResourceOcc(v)
-            | DpipeTableResourceId(v)
-            | DpipeTableResourceUnit(v)
-            | RateTxShare(v)
-            | RateTxMax(v)
-            | HealthReporterErrCount(v)
-            | HealthReporterRecoverCount(v)
-            | HealthReporterDumpTs(v)
-            | HealthReporterGracefulPeriod(v)
-            | FlashUpdateStatusDone(v)
-            | FlashUpdateStatusTotal(v)
-            | HealthReporterDumpTsNs(v)
-            | TrapPolicerRate(v)
-            | TrapPolicerBurst(v) => v.buf_len(),
-
             PortIbdevName(s)
             | RegionName(s)
             | InfoDriverName(s)
@@ -444,13 +289,7 @@ impl Nla for GenlDevlinkAttrs {
             | Param(v) => v.buf_len(),
 
             RegionChunkData(nla) => nla.len(),
-
-            ParamGeneric(v)
-            | FmsgObjNestStart(v)
-            | FmsgPairNestStart(v)
-            | FmsgArrNestStart(v)
-            | FmsgNestEnd(v)
-            | TrapGeneric(v) => v.buf_len(),
+            _ => 0,
         }
     }
 
@@ -692,6 +531,24 @@ impl Nla for GenlDevlinkAttrs {
 
     fn emit_value(&self, buffer: &mut [u8]) {
         use GenlDevlinkAttrs::*;
+
+        // if self.type_id() == TypeId::of::<u8>() {
+        //     buffer[0] = *self. as_inner();
+        //     return;
+        // } else if self.type_id() == TypeId::of::<u16>() {
+        //     NativeEndian::write_u16(buffer, *self.as_inner());
+        //     return;
+        // } else if self.type_id() == TypeId::of::<u32>() {
+        //     NativeEndian::write_u32(buffer, *self.as_inner());
+        //     return;
+        // } else if self.type_id() == TypeId::of::<u64>() {
+        //     NativeEndian::write_u64(buffer, *self.as_inner());
+        //     return;
+        // } else if self.type_id() == TypeId::of::<bool>() {
+        //     buffer[0] = *self.as_inner() as u8;
+        //     return;
+        // }
+
         match self {
             BusName(s) => {
                 buffer[..s.len()].copy_from_slice(s.as_bytes());
