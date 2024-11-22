@@ -184,7 +184,7 @@ pub enum GenlDevlinkAttrs {
 }
 
 trait TypeInfo {
-    fn type_of(&self) -> &'static str;
+//    fn type_of(&self) -> &'static str;
     fn buf_len(&self) -> usize;
 }
 
@@ -198,74 +198,83 @@ trait TypeInfo {
 // }
 
 impl TypeInfo for Vec<GenlDevlinkAttrs> {
-    fn type_of(&self) -> &'static str {
-        "Vec"
-    }
+    // fn type_of(&self) -> &'static str {
+    //     "Vec"
+    // }
     fn buf_len(&self) -> usize {
         self.iter().map(|nla| nla.buffer_len()).sum()
     }
 }
-
-impl TypeInfo for u32 {
-    fn type_of(&self) -> &'static str {
-        "u32"
+impl TypeInfo for Vec<u8> {
+    // fn type_of(&self) -> &'static str {
+    //     "Vec"
+    // }
+    fn buf_len(&self) -> usize {
+        self.len()
     }
+}
+impl TypeInfo for u32 {
+    // fn type_of(&self) -> &'static str {
+    //     "u32"
+    // }
     fn buf_len(&self) -> usize {
         size_of_val(self)
     }
 }
 
 impl TypeInfo for u64 {
-    fn type_of(&self) -> &'static str {
-        "u64"
-    }
+    // fn type_of(&self) -> &'static str {
+    //     "u64"
+    // }
     fn buf_len(&self) -> usize {
         size_of_val(self)
     }
 }
 
 impl TypeInfo for u16 {
-    fn type_of(&self) -> &'static str {
-        "u16"
-    }
+    // fn type_of(&self) -> &'static str {
+    //     "u16"
+    // }
     fn buf_len(&self) -> usize {
         size_of_val(self)
     }
 }
 
 impl TypeInfo for u8 {
-    fn type_of(&self) -> &'static str {
-        "u8"
-    }
+    // fn type_of(&self) -> &'static str {
+    //     "u8"
+    // }
     fn buf_len(&self) -> usize {
         size_of_val(self)
     }
 }
 
 impl TypeInfo for bool {
-    fn type_of(&self) -> &'static str {
-        "bool"
-    }
+    // fn type_of(&self) -> &'static str {
+    //     "bool"
+    // }
     fn buf_len(&self) -> usize {
         size_of_val(self)
     }
 }
 
 impl TypeInfo for String {
-    fn type_of(&self) -> &'static str {
-        "String"
-    }
+    // fn type_of(&self) -> &'static str {
+    //     "String"
+    // }
     fn buf_len(&self) -> usize {
         self.len() + 1
     }
 }
+
+// sprawdzic czy da sie zastosowac iteratior po wariantach (zdaje sie i tak bedzie trzeba rozdzielic obliczanie na typy zmiennych,
+// tak zeby na etapie kompilacji typ zmiennej byl zedfiniowany). Innym rozwiazaniem jest zastosowanie makra
 
 // sprawdzic czy mozna rozwiazac to po typie a nie listowac calosci
 // lub posortowac calosc
 impl Nla for GenlDevlinkAttrs {
     fn value_len(&self) -> usize {
         use GenlDevlinkAttrs::*;
-
         match self {
             ParamType(v)
             | ReloadStatus(v)
@@ -338,7 +347,7 @@ impl Nla for GenlDevlinkAttrs {
             | NetnsFd(v)
             | NetnsPid(v)
             | NetnsId(v)
-            | TrapPolicerId(v) => size_of_val(v),
+            | TrapPolicerId(v) => v.buf_len(),
 
             RegionSize(v)
             | ParamValue(v)
@@ -366,7 +375,7 @@ impl Nla for GenlDevlinkAttrs {
             | FlashUpdateStatusTotal(v)
             | HealthReporterDumpTsNs(v)
             | TrapPolicerRate(v)
-            | TrapPolicerBurst(v) => size_of_val(v),
+            | TrapPolicerBurst(v) => v.buf_len(),
 
             PortIbdevName(s)
             | RegionName(s)
@@ -436,12 +445,12 @@ impl Nla for GenlDevlinkAttrs {
 
             RegionChunkData(nla) => nla.len(),
 
-            ParamGeneric(v) => size_of_val(v),
-            FmsgObjNestStart(v) => size_of_val(v),
-            FmsgPairNestStart(v) => size_of_val(v),
-            FmsgArrNestStart(v) => size_of_val(v),
-            FmsgNestEnd(v) => size_of_val(v),
-            TrapGeneric(v) => size_of_val(v),
+            ParamGeneric(v)
+            | FmsgObjNestStart(v)
+            | FmsgPairNestStart(v)
+            | FmsgArrNestStart(v)
+            | FmsgNestEnd(v)
+            | TrapGeneric(v) => v.buf_len(),
         }
     }
 
